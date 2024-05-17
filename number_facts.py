@@ -11,7 +11,9 @@ openai = OpenAI(
   api_key=OPENAI_API_KEY
 )
 
-def build_messages(user_query, message=None):
+previous_messages = []
+
+def build_messages(user_query):
   messages = [
     {
       "role": "system",
@@ -19,10 +21,10 @@ def build_messages(user_query, message=None):
     }
   ]
 
-  if message:
+  for message in previous_messages:
     messages.append({
       "role": "system",
-      "content": f"You previously gave this message to the user: {message}. Infer the user's next message from this."
+      "content": f"You previously gave this message to the user: {message}. Infer the user's next message from this and other messages you previously replied with."
     })
 
   messages.append({
@@ -32,11 +34,11 @@ def build_messages(user_query, message=None):
 
   return messages
 
-def build_params(user_query, message):
+def build_params(user_query):
   
   params = {
     "model": "gpt-4-turbo",
-    "messages": build_messages(user_query, message),
+    "messages": build_messages(user_query),
     "tools": [
         {
             "type": "function",
@@ -88,7 +90,10 @@ def main(prompt=None, query=None, message=None):
     else:
       user_query = input("Enter a number and a fact type (trivia or math): ")
 
-  params = build_params(user_query, message)
+  if message:
+    previous_messages.append(message)
+
+  params = build_params(user_query)
 
   response = openai.chat.completions.create(
     model="gpt-3.5-turbo",
