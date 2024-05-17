@@ -11,7 +11,7 @@ openai = OpenAI(
   api_key=OPENAI_API_KEY
 )
 
-def build_messages(user_query, number=None, fact_type=None):
+def build_messages(user_query, message=None):
   messages = [
     {
       "role": "system",
@@ -19,10 +19,10 @@ def build_messages(user_query, number=None, fact_type=None):
     }
   ]
 
-  if number and fact_type:
+  if message:
     messages.append({
       "role": "system",
-      "content": f"The user has previously asked for a {fact_type} fact about {number}."
+      "content": f"You previously gave this message to the user: {message}. Infer the user's next message from this."
     })
 
   messages.append({
@@ -32,11 +32,11 @@ def build_messages(user_query, number=None, fact_type=None):
 
   return messages
 
-def build_params(user_query, number=None, fact_type=None):
+def build_params(user_query, message):
   
   params = {
     "model": "gpt-4-turbo",
-    "messages": build_messages(user_query, number, fact_type),
+    "messages": build_messages(user_query, message),
     "tools": [
         {
             "type": "function",
@@ -79,7 +79,7 @@ def get_number_fact(number, fact_type="trivia"):
 def return_message_from_system(message):
   return message
 
-def main(prompt=None, query=None, number=None, fact_type=None):
+def main(prompt=None, query=None, message=None):
   if query:
     user_query = query
   else:
@@ -88,7 +88,7 @@ def main(prompt=None, query=None, number=None, fact_type=None):
     else:
       user_query = input("Enter a number and a fact type (trivia or math): ")
 
-  params = build_params(user_query, number, fact_type)
+  params = build_params(user_query, message)
 
   response = openai.chat.completions.create(
     model="gpt-3.5-turbo",
@@ -104,11 +104,11 @@ def main(prompt=None, query=None, number=None, fact_type=None):
       fact_type = json.loads(args)["fact_type"]
       fact = get_number_fact(number, fact_type)
       print(fact)
-      main(prompt="what else would you like to know?", number=number, fact_type=fact_type)
+      main(prompt="what else would you like to know?", message=fact)
   else:
     system_message = return_message_from_system(response.choices[0].message.content)
     user_input = input(f"{system_message}: ")
-    main(query=user_input)
+    main(query=user_input, message=system_message)
 
 if __name__ == "__main__":
   main()
